@@ -5,6 +5,9 @@ Runs fully client-side in your browser — fast, private, and easy to use. 🚀
 
 👉 **Try it online:** [GitHub Pages Demo](https://AlekseyFadeev.github.io/epub-converter/converter.html)
 
+⭐ If you find this project useful, please give it a star — it helps others discover it!
+
+
 ## ✨ Features
 - 📚 Convert FB2 → EPUB instantly
 - 🖥️ Clean, simple UI in a single HTML file
