@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FB2 to EPUB Converter</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+        <style>
+            @keyframes slideUp {
+                from {
+                    transform: translateY(10px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            .slide-up {
+                animation: slideUp 0.3s ease-out;
+            }
+            @keyframes pulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.05);
+                }
+            }
+            .pulse-animation {
+                animation: pulse 2s infinite;
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .glass-effect {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+        </style>
+    </head>
+    <body class="min-h-screen gradient-bg flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl">
+            <!-- Header -->
+            <div class="text-center mb-8 slide-up">
+                <h1 class="text-4xl font-bold text-white mb-2">
+                    FB2 → EPUB Converter
+                </h1>
+                <p class="text-purple-100">
+                    Convert your FB2 books to EPUB format with full Unicode
+                    support
+                </p>
+            </div>
+
+            <!-- Main Container -->
+            <div class="glass-effect rounded-2xl shadow-2xl p-8 slide-up">
+                <!-- Upload Area -->
+                <div
+                    id="dropZone"
+                    class="border-3 border-dashed border-purple-300 rounded-xl p-12 text-center hover:border-purple-500 transition-all duration-300 cursor-pointer bg-gradient-to-br from-purple-50 to-pink-50"
+                >
+                    <svg
+                        class="mx-auto h-16 w-16 text-purple-400 mb-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                    </svg>
+                    <p class="text-lg font-semibold text-gray-700 mb-2">
+                        Drop your FB2 file here
+                    </p>
+                    <p class="text-sm text-gray-500 mb-4">or click to browse</p>
+                    <button
+                        class="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors duration-300 font-medium"
+                    >
+                        Choose File
+                    </button>
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept=".fb2,.xml"
+                        class="hidden"
+                    />
+                </div>
+
+                <!-- File Info -->
+                <div
+                    id="fileInfo"
+                    class="hidden mt-6 p-4 bg-green-50 rounded-lg border border-green-200 slide-up"
+                >
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <svg
+                                class="h-5 w-5 text-green-600 mr-2"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            <span
+                                id="fileName"
+                                class="text-green-800 font-medium"
+                            ></span>
+                        </div>
+                        <span
+                            id="fileSize"
+                            class="text-sm text-green-600"
+                        ></span>
+                    </div>
+                </div>
+
+                <!-- Book Metadata -->
+                <div
+                    id="bookMetadata"
+                    class="hidden mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200"
+                >
+                    <h3
+                        class="font-semibold text-blue-900 mb-3 flex items-center"
+                    >
+                        <svg
+                            class="h-5 w-5 mr-2"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.669 0-3.218.51-4.5 1.385V4.804z"
+                            />
+                        </svg>
+                        Book Information
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex">
+                            <span class="font-medium text-blue-700 w-24"
+                                >Title:</span
+                            ><span id="bookTitle" class="text-gray-700"></span>
+                        </div>
+                        <div class="flex">
+                            <span class="font-medium text-blue-700 w-24"
+                                >Author:</span
+                            ><span id="bookAuthor" class="text-gray-700"></span>
+                        </div>
+                        <div class="flex">
+                            <span class="font-medium text-blue-700 w-24"
+                                >Language:</span
+                            ><span id="bookLang" class="text-gray-700"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="progressContainer" class="hidden mt-6">
+                    <div
+                        class="flex justify-between text-sm text-gray-600 mb-2"
+                    >
+                        <span>Converting...</span>
+                        <span id="progressText">0%</span>
+                    </div>
+                    <div
+                        class="w-full bg-gray-200 rounded-full h-3 overflow-hidden"
+                    >
+                        <div
+                            id="progressBar"
+                            class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- Convert Button -->
+                <button
+                    id="convertBtn"
+                    class="hidden w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                    Convert to EPUB
+                </button>
+
+                <!-- Download Button -->
+                <a
+                    id="downloadBtn"
+                    class="hidden w-full mt-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg inline-block text-center pulse-animation"
+                >
+                    <svg
+                        class="inline h-5 w-5 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                    </svg>
+                    Download EPUB
+                </a>
+
+                <!-- Error Message -->
+                <div
+                    id="errorMessage"
+                    class="hidden mt-6 p-4 bg-red-50 rounded-lg border border-red-200"
+                >
+                    <div class="flex">
+                        <svg
+                            class="h-5 w-5 text-red-400 mr-2"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        <span id="errorText" class="text-red-800"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                <div class="glass-effect rounded-lg p-4">
+                    <svg
+                        class="h-8 w-8 mx-auto mb-2 text-purple-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                        />
+                    </svg>
+                    <p class="text-sm text-gray-700 font-medium">
+                        Multi-Language
+                    </p>
+                </div>
+                <div class="glass-effect rounded-lg p-4">
+                    <svg
+                        class="h-8 w-8 mx-auto mb-2 text-purple-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                    </svg>
+                    <p class="text-sm text-gray-700 font-medium">
+                        Structure Preserved
+                    </p>
+                </div>
+                <div class="glass-effect rounded-lg p-4">
+                    <svg
+                        class="h-8 w-8 mx-auto mb-2 text-purple-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                    </svg>
+                    <p class="text-sm text-gray-700 font-medium">
+                        Fast Conversion
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Global variables
+            let fb2Content = null;
+            let bookMetadata = {};
+            let epubBlob = null;
+
+            // DOM elements
+            const dropZone = document.getElementById("dropZone");
+            const fileInput = document.getElementById("fileInput");
+            const fileInfo = document.getElementById("fileInfo");
+            const fileName = document.getElementById("fileName");
+            const fileSize = document.getElementById("fileSize");
+            const bookMetadataDiv = document.getElementById("bookMetadata");
+            const bookTitle = document.getElementById("bookTitle");
+            const bookAuthor = document.getElementById("bookAuthor");
+            const bookLang = document.getElementById("bookLang");
+            const convertBtn = document.getElementById("convertBtn");
+            const downloadBtn = document.getElementById("downloadBtn");
+            const progressContainer =
+                document.getElementById("progressContainer");
+            const progressBar = document.getElementById("progressBar");
+            const progressText = document.getElementById("progressText");
+            const errorMessage = document.getElementById("errorMessage");
+            const errorText = document.getElementById("errorText");
+
+            // Event listeners
+            dropZone.addEventListener("click", () => fileInput.click());
+            dropZone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropZone.classList.add("border-purple-500", "bg-purple-100");
+            });
+            dropZone.addEventListener("dragleave", () => {
+                dropZone.classList.remove("border-purple-500", "bg-purple-100");
+            });
+            dropZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("border-purple-500", "bg-purple-100");
+                const file = e.dataTransfer.files[0];
+                if (
+                    file &&
+                    (file.name.endsWith(".fb2") ||
+                        file.type === "text/xml" ||
+                        file.name.endsWith(".xml"))
+                ) {
+                    handleFile(file);
+                } else {
+                    showError("Please drop a valid .fb2 file.");
+                }
+            });
+            fileInput.addEventListener("change", (e) => {
+                const file = e.target.files[0];
+                if (file) handleFile(file);
+            });
+            convertBtn.addEventListener("click", convertToEpub);
+            downloadBtn.addEventListener("click", () => {
+                /* link is already set */
+            });
+
+            async function readFB2WithDeclaredEncoding(file) {
+                const buf = await file.arrayBuffer();
+                const bytes = new Uint8Array(buf);
+
+                // Read the first ~1KB as ASCII to sniff the XML prolog safely
+                // (the prolog itself is ASCII even if the content is not).
+                const headAscii = Array.from(bytes.slice(0, 1024))
+                    .map((b) => String.fromCharCode(b))
+                    .join("");
+                const m = headAscii.match(/encoding\s*=\s*["']([\w\-]+)["']/i);
+                const enc = (m ? m[1] : "utf-8").toLowerCase();
+
+                // Supported by TextDecoder in modern browsers: utf-8, windows-1251, koi8-r, iso-8859-5, etc.
+                const decoder = new TextDecoder(enc);
+                return decoder.decode(bytes);
+            }
+
+            // File handling
+            async function handleFile(file) {
+                hideError();
+                epubBlob = null;
+                try {
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    fileInfo.classList.remove("hidden");
+
+                    const text = await readFB2WithDeclaredEncoding(file);
+                    fb2Content = text;
+
+                    // Parse FB2 metadata
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(
+                        text,
+                        "application/xml",
+                    );
+
+                    // Check for parse errors
+                    if (xmlDoc.querySelector("parsererror")) {
+                        throw new Error("Invalid FB2 file format");
+                    }
+
+                    // Extract metadata
+                    const titleInfo =
+                        xmlDoc.querySelector("description > title-info") ||
+                        xmlDoc.querySelector("title-info");
+
+                    // Title
+                    const titleElem =
+                        titleInfo && titleInfo.querySelector("book-title");
+                    bookMetadata.title = titleElem
+                        ? titleElem.textContent.trim()
+                        : "Untitled";
+
+                    // Author
+                    const authorElem =
+                        titleInfo && titleInfo.querySelector("author");
+                    if (authorElem) {
+                        const firstName =
+                            authorElem.querySelector("first-name");
+                        const lastName = authorElem.querySelector("last-name");
+                        const middleName =
+                            authorElem.querySelector("middle-name");
+
+                        let authorName = "";
+                        if (firstName)
+                            authorName += firstName.textContent + " ";
+                        if (middleName)
+                            authorName += middleName.textContent + " ";
+                        if (lastName) authorName += lastName.textContent;
+                        bookMetadata.author =
+                            authorName.trim() || "Unknown Author";
+                    } else {
+                        bookMetadata.author = "Unknown Author";
+                    }
+
+                    // Language
+                    const langElem =
+                        titleInfo &&
+                        (titleInfo.querySelector("lang") ||
+                            titleInfo.querySelector("src-lang"));
+                    bookMetadata.language = langElem
+                        ? langElem.textContent.trim()
+                        : "en";
+
+                    // Date (optional)
+                    const dateElem =
+                        titleInfo && titleInfo.querySelector("date");
+                    bookMetadata.date = dateElem
+                        ? dateElem.getAttribute("value") ||
+                          dateElem.textContent.trim()
+                        : "";
+
+                    // Display metadata
+                    bookTitle.textContent = bookMetadata.title;
+                    bookAuthor.textContent = bookMetadata.author;
+                    bookLang.textContent = (
+                        bookMetadata.language || "en"
+                    ).toUpperCase();
+                    bookMetadataDiv.classList.remove("hidden");
+
+                    convertBtn.classList.remove("hidden");
+                    downloadBtn.classList.add("hidden");
+                } catch (error) {
+                    showError(error.message);
+                }
+            }
+
+            // Convert FB2 to EPUB 3.0
+            async function convertToEpub() {
+                if (!fb2Content) return;
+                hideError();
+                progressContainer.classList.remove("hidden");
+                convertBtn.classList.add("hidden");
+
+                try {
+                    updateProgress(8);
+
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(
+                        fb2Content,
+                        "text/xml",
+                    );
+                    if (xmlDoc.querySelector("parsererror"))
+                        throw new Error("Failed to parse FB2 XML.");
+
+                    // Build image map from <binary id="" content-type=""> base64
+                    const binaries = {};
+                    const binaryNodes = xmlDoc.querySelectorAll("binary[id]");
+                    binaryNodes.forEach((b) => {
+                        const id = b.getAttribute("id");
+                        const mime = (
+                            b.getAttribute("content-type") || "image/jpeg"
+                        ).toLowerCase();
+                        const base64 = (b.textContent || "").replace(
+                            /\s+/g,
+                            "",
+                        );
+                        binaries[id] = { mime, base64, ext: mimeToExt(mime) };
+                    });
+
+                    updateProgress(18);
+
+                    // Extract sections (chapters). Use all <body> sections; if none, wrap whole body.
+                    const bodies = xmlDoc.querySelectorAll("body");
+                    const chapters = [];
+                    let chapterIndex = 1;
+
+                    function pushSectionAsChapter(section) {
+                        const titleNode =
+                            section.querySelector(":scope > title");
+                        const chapTitle = titleNode
+                            ? textContentDeep(titleNode).trim()
+                            : `Chapter ${chapterIndex}`;
+                        const htmlContent = serializeSectionToXHTML(
+                            section,
+                            binaries,
+                        );
+                        chapters.push({
+                            id: `ch${chapterIndex}`,
+                            title: chapTitle || `Chapter ${chapterIndex}`,
+                            content: htmlContent,
+                        });
+                        chapterIndex++;
+                    }
+
+                    if (bodies.length) {
+                        bodies.forEach((body) => {
+                            const sections =
+                                body.querySelectorAll(":scope > section");
+                            if (sections.length) {
+                                sections.forEach((sec) =>
+                                    pushSectionAsChapter(sec),
+                                );
+                            } else {
+                                // no sections - take whole body as a single chapter
+                                pushSectionAsChapter(body);
+                            }
+                        });
+                    } else {
+                        // Fallback: use entire document
+                        const allSections = xmlDoc.querySelectorAll("section");
+                        if (allSections.length) {
+                            allSections.forEach((sec) =>
+                                pushSectionAsChapter(sec),
+                            );
+                        } else {
+                            // Last resort: everything
+                            const wrapper = xmlDoc.documentElement;
+                            pushSectionAsChapter(wrapper);
+                        }
+                    }
+
+                    if (chapters.length === 0)
+                        throw new Error(
+                            "No readable content sections found in FB2.",
+                        );
+
+                    updateProgress(35);
+
+                    // Create EPUB structure using JSZip
+                    const zip = new JSZip();
+
+                    // Add mimetype (must be uncompressed)
+                    zip.file("mimetype", "application/epub+zip", {
+                        compression: "STORE",
+                    });
+
+                    // META-INF/container.xml
+                    zip.folder("META-INF").file(
+                        "container.xml",
+                        `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0"
+  xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf"
+              media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`,
+                    );
+
+                    updateProgress(45);
+
+                    const oebps = zip.folder("OEBPS");
+                    const css = `
+@charset "UTF-8";
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"; line-height: 1.6; padding: 1rem; }
+h1,h2,h3 { line-height: 1.25; }
+h1 { font-size: 1.6rem; margin: 1rem 0 .5rem; }
+h2 { font-size: 1.4rem; margin: 1rem 0 .5rem; }
+h3 { font-size: 1.2rem; margin: .8rem 0 .4rem; }
+p { margin: .6rem 0; }
+blockquote { margin: .8rem 1rem; padding-left: .8rem; border-left: 3px solid #ccc; }
+.poem { margin: .8rem 0; }
+.stanza { margin: .6rem 0; }
+img { max-width: 100%; height: auto; }
+hr { border: 0; border-top: 1px solid #ddd; margin: 1rem 0; }
+                `.trim();
+                    oebps.file("styles.css", css);
+
+                    // Write chapter files
+                    const lang = (bookMetadata.language || "en").toLowerCase();
+                    const manifestItems = [
+                        {
+                            id: "css",
+                            href: "styles.css",
+                            mediaType: "text/css",
+                        },
+                    ];
+                    const spineItemrefs = [];
+
+                    chapters.forEach((ch, idx) => {
+                        const filename = `chapter-${idx + 1}.xhtml`;
+                        const xhtml = wrapAsXHTML(ch.title, ch.content, lang);
+                        oebps.file(filename, xhtml);
+                        manifestItems.push({
+                            id: ch.id,
+                            href: filename,
+                            mediaType: "application/xhtml+xml",
+                        });
+                        spineItemrefs.push({ idref: ch.id });
+                    });
+
+                    updateProgress(60);
+
+                    // Save images from binaries (only those referenced get picked up during serialize, but we can save all)
+                    const imagesFolder = oebps.folder("images");
+                    const usedImageHrefs = new Set(); // we’ll fill during serialize; also add all binaries to manifest
+
+                    // Collect referenced ids from content
+                    chapters.forEach((ch) => {
+                        const regex = /src="images\/([^"]+)"/g;
+                        let m;
+                        while ((m = regex.exec(ch.content)) !== null) {
+                            usedImageHrefs.add(m[1]);
+                        }
+                    });
+
+                    // Write only used images to reduce size (fallback to all binaries if none detected)
+                    const imageKeys = usedImageHrefs.size
+                        ? [...usedImageHrefs]
+                        : Object.keys(binaries).map(
+                              (id) => `${id}.${binaries[id].ext}`,
+                          );
+
+                    for (const name of imageKeys) {
+                        let id, ext;
+                        if (name.includes(".")) {
+                            id = name.substring(0, name.lastIndexOf("."));
+                            ext = name.substring(name.lastIndexOf(".") + 1);
+                        } else {
+                            id = name;
+                            ext = (binaries[id] && binaries[id].ext) || "jpg";
+                        }
+                        const bin = binaries[id];
+                        if (!bin) continue;
+                        const arrayBuf = base64ToUint8Array(bin.base64);
+                        imagesFolder.file(`${id}.${ext}`, arrayBuf);
+                        manifestItems.push({
+                            id: `img_${id}`,
+                            href: `images/${id}.${ext}`,
+                            mediaType: bin.mime,
+                        });
+                    }
+
+                    updateProgress(72);
+
+                    // nav.xhtml (EPUB 3)
+                    const navXhtml = buildNavXHTML(
+                        bookMetadata.title || "Untitled",
+                        chapters,
+                        lang,
+                    );
+                    oebps.file("nav.xhtml", navXhtml);
+                    manifestItems.push({
+                        id: "nav",
+                        href: "nav.xhtml",
+                        mediaType: "application/xhtml+xml",
+                        properties: "nav",
+                    });
+
+                    // content.opf
+                    const uniqueId = "urn:uuid:" + generateUUIDv4();
+                    const contentOpf = buildContentOpf({
+                        id: uniqueId,
+                        title: bookMetadata.title || "Untitled",
+                        author: bookMetadata.author || "Unknown Author",
+                        lang,
+                        date:
+                            bookMetadata.date ||
+                            new Date().toISOString().slice(0, 10),
+                        manifestItems,
+                        spineItemrefs,
+                    });
+                    oebps.file("content.opf", contentOpf);
+
+                    updateProgress(86);
+
+                    // Generate EPUB blob
+                    epubBlob = await zip.generateAsync({
+                        type: "blob",
+                        compression: "DEFLATE",
+                        compressionOptions: { level: 9 },
+                    });
+
+                    const epubName = `${slugify(bookMetadata.title || "book")}.epub`;
+                    const url = URL.createObjectURL(epubBlob);
+                    downloadBtn.href = url;
+                    downloadBtn.download = epubName;
+                    downloadBtn.classList.remove("hidden");
+
+                    updateProgress(100);
+                } catch (err) {
+                    showError(err.message || "Conversion failed.");
+                    convertBtn.classList.remove("hidden");
+                    progressContainer.classList.add("hidden");
+                }
+            }
+
+            // ===== Helpers =====
+
+            function updateProgress(val) {
+                progressBar.style.width = `${val}%`;
+                progressText.textContent = `${val}%`;
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + " B";
+                const units = ["KB", "MB", "GB"];
+                let i = -1;
+                do {
+                    bytes = bytes / 1024;
+                    i++;
+                } while (bytes >= 1024 && i < units.length - 1);
+                return bytes.toFixed(2) + " " + units[i];
+            }
+
+            function showError(msg) {
+                errorText.textContent = msg;
+                errorMessage.classList.remove("hidden");
+            }
+            function hideError() {
+                errorMessage.classList.add("hidden");
+                errorText.textContent = "";
+            }
+
+            function textContentDeep(node) {
+                // Get visible concatenated text (preserves Unicode)
+                if (node.nodeType === 3) return node.nodeValue || "";
+                let s = "";
+                node.childNodes.forEach((n) => (s += textContentDeep(n)));
+                return s;
+            }
+
+            function escapeXML(s) {
+                return s
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            }
+
+            function serializeInline(node, binaries) {
+                // Convert common FB2 inline tags to XHTML
+                if (node.nodeType === 3) {
+                    return escapeXML(node.nodeValue || "");
+                }
+                if (node.nodeType !== 1) return "";
+
+                const tag = node.tagName.toLowerCase();
+                const children = [...node.childNodes]
+                    .map((n) => serializeInline(n, binaries))
+                    .join("");
+
+                switch (tag) {
+                    case "emphasis":
+                        return `<em>${children}</em>`;
+                    case "strong":
+                        return `<strong>${children}</strong>`;
+                    case "code":
+                        return `<code>${children}</code>`;
+                    case "sub":
+                        return `<sub>${children}</sub>`;
+                    case "sup":
+                        return `<sup>${children}</sup>`;
+                    case "strikethrough":
+                        return `<s>${children}</s>`;
+                    case "a": {
+                        const href =
+                            node.getAttribute("xlink:href") ||
+                            node.getAttribute("href") ||
+                            "";
+                        const safeHref = href.startsWith("#")
+                            ? href
+                            : escapeXML(href);
+                        return `<a href="${escapeXML(safeHref)}">${children || escapeXML(node.textContent)}</a>`;
+                    }
+                    case "image": {
+                        const href = (
+                            node.getAttribute("xlink:href") || ""
+                        ).replace(/^#/, "");
+                        if (href && binaries[href]) {
+                            const ext = binaries[href].ext || "jpg";
+                            return `<img alt="" src="images/${href}.${ext}" />`;
+                        }
+                        return "";
+                    }
+                    default:
+                        return children; // ignore unknown inlines, keep text
+                }
+            }
+
+            function serializeSectionToXHTML(section, binaries) {
+                // Map FB2 block-level elements to semantic XHTML
+                let html = "";
+                const nodes = [...section.childNodes];
+
+                // optional title
+                const titleNode = section.querySelector(":scope > title");
+                if (titleNode) {
+                    const t = titleNode.querySelector("p")
+                        ? [...titleNode.querySelectorAll("p")]
+                              .map((p) => serializeInline(p, binaries))
+                              .join(" ")
+                        : escapeXML(textContentDeep(titleNode).trim());
+                    html += `<h2>${t}</h2>`;
+                }
+
+                for (const node of nodes) {
+                    if (node.nodeType !== 1) continue;
+                    const tag = node.tagName.toLowerCase();
+                    if (tag === "title") continue;
+
+                    if (tag === "p") {
+                        html += `<p>${serializeInline(node, binaries)}</p>`;
+                    } else if (tag === "subtitle") {
+                        html += `<h3>${serializeInline(node, binaries)}</h3>`;
+                    } else if (tag === "epigraph") {
+                        const inner = [...node.querySelectorAll("p")]
+                            .map((p) => serializeInline(p, binaries))
+                            .join("");
+                        html += `<blockquote>${inner}</blockquote>`;
+                    } else if (tag === "cite") {
+                        const inner = [...node.childNodes]
+                            .map((n) => serializeInline(n, binaries))
+                            .join("");
+                        html += `<blockquote>${inner}</blockquote>`;
+                    } else if (tag === "poem") {
+                        html += `<div class="poem">`;
+                        const title = node.querySelector(":scope > title");
+                        if (title)
+                            html += `<h3>${serializeInline(title, binaries)}</h3>`;
+                        node.querySelectorAll(":scope > stanza").forEach(
+                            (st) => {
+                                html += `<div class="stanza">`;
+                                st.querySelectorAll(":scope > v").forEach(
+                                    (v) => {
+                                        html += `<div>${serializeInline(v, binaries)}</div>`;
+                                    },
+                                );
+                                html += `</div>`;
+                            },
+                        );
+                        const author = node.querySelector(
+                            ":scope > text-author",
+                        );
+                        if (author)
+                            html += `<div class="text-right italic">${serializeInline(author, binaries)}</div>`;
+                        html += `</div>`;
+                    } else if (tag === "empty-line") {
+                        html += `<hr />`;
+                    } else if (tag === "image") {
+                        const href = (
+                            node.getAttribute("xlink:href") || ""
+                        ).replace(/^#/, "");
+                        if (href && binaries[href]) {
+                            const ext = binaries[href].ext || "jpg";
+                            html += `<p><img alt="" src="images/${href}.${ext}" /></p>`;
+                        }
+                    } else if (tag === "section") {
+                        // nested section -> recursive
+                        html += serializeSectionToXHTML(node, binaries);
+                    } else {
+                        // Unknown block -> try inline serialization inside <p>
+                        html += `<p>${serializeInline(node, binaries)}</p>`;
+                    }
+                }
+                return html || "<p></p>";
+            }
+
+            function wrapAsXHTML(title, bodyContent, lang) {
+                return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${escapeXML(lang)}" lang="${escapeXML(lang)}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeXML(title)}</title>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+<body>
+  <h1>${escapeXML(title)}</h1>
+  ${bodyContent}
+</body>
+</html>`;
+            }
+
+            function buildNavXHTML(bookTitle, chapters, lang) {
+                const lis = chapters
+                    .map(
+                        (ch, i) =>
+                            `<li><a href="chapter-${i + 1}.xhtml">${escapeXML(ch.title)}</a></li>`,
+                    )
+                    .join("\n");
+                return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="${escapeXML(lang)}" lang="${escapeXML(lang)}">
+<head>
+  <meta charset="UTF-8" />
+  <title>Table of Contents</title>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+<body>
+  <nav epub:type="toc" id="toc">
+    <h2>${escapeXML(bookTitle)}</h2>
+    <ol>
+      ${lis}
+    </ol>
+  </nav>
+</body>
+</html>`;
+            }
+
+            function buildContentOpf({
+                id,
+                title,
+                author,
+                lang,
+                date,
+                manifestItems,
+                spineItemrefs,
+            }) {
+                const manifestXml = manifestItems
+                    .map((it) => {
+                        const props = it.properties
+                            ? ` properties="${it.properties}"`
+                            : "";
+                        return `<item id="${escapeXML(it.id)}" href="${escapeXML(it.href)}" media-type="${escapeXML(it.mediaType)}"${props} />`;
+                    })
+                    .join("\n      ");
+                const spineXml = spineItemrefs
+                    .map((sr) => `<itemref idref="${escapeXML(sr.idref)}" />`)
+                    .join("\n      ");
+                return `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0" xml:lang="${escapeXML(lang)}">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="pub-id">${escapeXML(id)}</dc:identifier>
+    <dc:title>${escapeXML(title)}</dc:title>
+    <dc:language>${escapeXML(lang)}</dc:language>
+    <dc:creator>${escapeXML(author)}</dc:creator>
+    <dc:date>${escapeXML(date)}</dc:date>
+    <meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d+Z$/, "Z")}</meta>
+  </metadata>
+  <manifest>
+      ${manifestXml}
+  </manifest>
+  <spine>
+      ${spineXml}
+  </spine>
+</package>`;
+            }
+
+            function mimeToExt(mime) {
+                if (!mime) return "jpg";
+                if (mime.includes("jpeg") || mime.includes("jpg")) return "jpg";
+                if (mime.includes("png")) return "png";
+                if (mime.includes("gif")) return "gif";
+                if (mime.includes("svg")) return "svg";
+                if (mime.includes("webp")) return "webp";
+                return "bin";
+            }
+
+            function base64ToUint8Array(base64) {
+                // Decode Base64 safely in browser (handles Unicode bytestreams)
+                const binaryString = atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++)
+                    bytes[i] = binaryString.charCodeAt(i);
+                return bytes;
+            }
+
+            function slugify(s) {
+                return (
+                    (s || "book")
+                        .normalize("NFKD")
+                        .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+                        .replace(/[^\w\s.-]+/g, "") // remove unsafe chars but keep unicode word chars
+                        .trim()
+                        .replace(/\s+/g, "_")
+                        .substring(0, 80) || "book"
+                );
+            }
+
+            function generateUUIDv4() {
+                // RFC4122 v4
+                const rnd = crypto.getRandomValues(new Uint8Array(16));
+                rnd[6] = (rnd[6] & 0x0f) | 0x40;
+                rnd[8] = (rnd[8] & 0x3f) | 0x80;
+                const hex = [...rnd]
+                    .map((b) => b.toString(16).padStart(2, "0"))
+                    .join("");
+                return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+            }
+        </script>
+    </body>
+</html>
