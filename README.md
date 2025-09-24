@@ -1,12 +1,12 @@
-# EPUB → FB2 Converter
+# FB2 -> EPUB Converter
 
-A lightweight, single-file (HTML + JS) tool to convert **EPUB** ebooks into **FB2** format.
+A lightweight, single-file (HTML + JS) tool to convert **FB2** ebooks into **EPUB** format.
 Runs fully client-side in your browser — fast, private, and easy to use. 🚀
 
 👉 **Try it online:** [GitHub Pages Demo](https://AlekseyFadeev.github.io/epub-converter/converter.html)
 
 ## ✨ Features
-- 📚 Convert EPUB → FB2 instantly
+- 📚 Convert FB2 → EPUB instantly
 - 🖥️ Clean, simple UI in a single HTML file
 - ⚡ No installs, no dependencies, no backend
 - 🔒 100% local — your books never leave your computer
@@ -15,7 +15,7 @@ Runs fully client-side in your browser — fast, private, and easy to use. 🚀
 ## 🚀 Usage
 1. Open the [GitHub Pages version](https://AlekseyFadeev.github.io/epub-converter/converter.html)
    **or** download and open `converter.html` in your browser.
-2. Drop an EPUB file, click **Download EPUB**, and save the FB2. 🎉
+2. Drop an FB2 file, click **Convert to EPUB**.That's it!
 
 ## 📦 Development
 This project is just one self-contained HTML + JS file.
